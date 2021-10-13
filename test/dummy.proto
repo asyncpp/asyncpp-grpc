@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+service DummyService {
+	rpc DummyUnary(DummyUnaryRequest) returns (DummyUnaryResponse);
+	rpc DummyServerStreaming(DummyServerStreamingRequest) returns (stream DummyServerStreamingResponse);
+	rpc DummyClientStreaming(stream DummyClientStreamingRequest) returns (DummyClientStreamingResponse);
+	rpc DummyBidiStreaming(stream DummyBidiStreamingRequest) returns (stream DummyBidiStreamingResponse);
+}
+
+message DummyUnaryRequest { string name = 1; }
+
+message DummyUnaryResponse { string response = 2; }
+
+message DummyServerStreamingRequest { string format = 1; }
+
+message DummyServerStreamingResponse { string response = 1; }
+
+message DummyClientStreamingRequest { string msg = 1; }
+
+message DummyClientStreamingResponse { int64 count = 1; }
+
+message DummyBidiStreamingRequest { string msg = 1; }
+
+message DummyBidiStreamingResponse { int64 count = 1; }
