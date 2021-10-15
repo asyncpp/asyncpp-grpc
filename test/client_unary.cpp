@@ -5,7 +5,6 @@
 #include <asyncpp/sync_wait.h>
 #include <asyncpp/task.h>
 #include <gtest/gtest.h>
-#include <spdlog/spdlog.h>
 
 using namespace asyncpp::grpc;
 

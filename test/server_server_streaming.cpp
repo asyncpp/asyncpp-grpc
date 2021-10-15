@@ -1,6 +1,5 @@
 #include "test_async_server.h"
 #include <asyncpp/grpc/server_server_streaming_task.h>
-#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 using namespace asyncpp::grpc;
@@ -14,7 +13,7 @@ server_server_streaming_task<DummyServerStreamingResponse> run_async_dummy_serve
 	// App logic
 	DummyServerStreamingResponse resp;
 	for (int i = 0; i < 10; i++) {
-		resp.set_response(fmt::format(req.format(), i));
+		resp.set_response(req.format() + std::to_string(i));
 		co_await write(resp);
 	}
 	co_return ::grpc::Status::OK;
@@ -28,12 +27,12 @@ TEST(ASYNCPP_GRPC, GrpcServerServerStreamingTask) {
 
 	DummyServerStreamingRequest req;
 	::grpc::ClientContext ctx;
-	req.set_format("Dummy {}");
+	req.set_format("Dummy ");
 	auto stream = server.stub()->DummyServerStreaming(&ctx, req);
 	DummyServerStreamingResponse resp;
 	int i = 0;
 	while (stream->Read(&resp)) {
-		ASSERT_EQ(resp.response(), fmt::format(req.format(), i++));
+		ASSERT_EQ(resp.response(), req.format() + std::to_string(i++));
 	}
 	ASSERT_EQ(i, 10);
 	auto res = stream->Finish();
