@@ -1,10 +1,10 @@
 #include "test_async_server.h"
-#include <asyncpp/grpc/server_bidi_streaming_task.h>
+#include <asyncpp/grpc/bidi_streaming_task.h>
 #include <gtest/gtest.h>
 
 using namespace asyncpp::grpc;
 
-server_bidi_streaming_task<DummyBidiStreamingRequest, DummyBidiStreamingResponse> run_async_dummy_bidi_streaming(DummyService::AsyncService* service,
+bidi_streaming_task<DummyBidiStreamingRequest, DummyBidiStreamingResponse> run_async_dummy_bidi_streaming(DummyService::AsyncService* service,
 																												 ::grpc::ServerCompletionQueue* cq) {
 	auto [ok, ctx] = co_await start(&DummyService::AsyncService::RequestDummyBidiStreaming, service, cq);
 	if (!ok) co_return ::grpc::Status::CANCELLED;

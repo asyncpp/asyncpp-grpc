@@ -1,29 +1,42 @@
 #pragma once
 #include <asyncpp/detail/std_import.h>
 #include <asyncpp/grpc/calldata_interface.h>
+#include <asyncpp/grpc/rw_tag.h>
 #include <asyncpp/grpc/util.h>
-#include <asyncpp/ptr_tag.h>
 
 namespace asyncpp::grpc {
 
 	template<typename TService, typename TRequest, typename TResponse>
-	struct start_unary_tag {
-		void (TService::*m_function)(::grpc::ServerContext*, TRequest*, ::grpc::ServerAsyncResponseWriter<TResponse>*, ::grpc::CompletionQueue*,
+	struct start_client_streaming_tag {
+		void (TService::*m_function)(::grpc::ServerContext*, ::grpc::ServerAsyncReader<TResponse, TRequest>*, ::grpc::CompletionQueue*,
 									 ::grpc::ServerCompletionQueue*, void*);
 		TService* m_service;
 		::grpc::ServerCompletionQueue* m_cq;
 	};
 
-	template<typename TResponse>
-	struct server_unary_task {
+	template<typename TService, typename TRequest, typename TResponse, typename TService2>
+	start_client_streaming_tag<TService, TRequest, TResponse> start(void (TService::*fn)(::grpc::ServerContext*,
+																						 ::grpc::ServerAsyncReader<TResponse, TRequest>*,
+																						 ::grpc::CompletionQueue*, ::grpc::ServerCompletionQueue*, void*),
+																	TService2* s, ::grpc::ServerCompletionQueue* cq) {
+		return start_client_streaming_tag<TService, TRequest, TResponse>{fn, s, cq};
+	}
+
+    /**
+     * \brief A server task implementing a client streaming rpc.
+     * \tparam TRequest The request type
+     * \tparam TResponse The response type
+     */
+	template<typename TRequest, typename TResponse>
+	struct client_streaming_task {
 		// Promise type of this task
 		class promise_type : asyncpp::grpc::calldata_interface {
 			// Coroutine and task each have a reference
 			std::atomic<size_t> m_ref_count{2};
 
 			::grpc::ServerContext m_context{};
+			::grpc::ServerAsyncReader<TResponse, TRequest> m_reader{&m_context};
 			TResponse m_response{};
-			::grpc::ServerAsyncResponseWriter<TResponse> m_writer{&m_context};
 
 			bool m_start_ok{false};
 
@@ -55,21 +68,20 @@ namespace asyncpp::grpc {
 			void return_value(::grpc::Status s) noexcept {
 				if (!m_start_ok) return;
 				this->ref();
-				m_writer.Finish(m_response, s, asyncpp::ptr_tag<2>(this));
+				m_reader.Finish(m_response, s, asyncpp::ptr_tag<2>(this));
 			}
 			void unhandled_exception() {
 				if (!m_start_ok) return;
 				this->ref();
-				m_writer.FinishWithError(util::exception_to_status(std::current_exception()), asyncpp::ptr_tag<1>(this));
+				m_reader.FinishWithError(util::exception_to_status(std::current_exception()), asyncpp::ptr_tag<1>(this));
 			}
 
-			template<typename TService, typename TRequest>
-			auto await_transform(start_unary_tag<TService, TRequest, TResponse> s) noexcept {
+			template<typename TService>
+			auto await_transform(start_client_streaming_tag<TService, TRequest, TResponse> s) noexcept {
 				struct awaiter : asyncpp::grpc::calldata_interface {
 					awaiter(promise_type* self, decltype(s) start) : m_self{self}, m_start{start} {}
 					promise_type* m_self;
 					decltype(s) m_start;
-					TRequest m_request{};
 					asyncpp::coroutine_handle<> m_handle{};
 					void handle_event(size_t, bool ok) noexcept override {
 						m_self->m_start_ok = ok;
@@ -78,13 +90,34 @@ namespace asyncpp::grpc {
 					constexpr bool await_ready() const noexcept { return false; }
 					constexpr void await_suspend(asyncpp::coroutine_handle<> h) noexcept {
 						m_handle = h;
-						(m_start.m_service->*(m_start.m_function))(&m_self->m_context, &m_request, &m_self->m_writer, m_start.m_cq, m_start.m_cq, this);
+						(m_start.m_service->*(m_start.m_function))(&m_self->m_context, &m_self->m_reader, m_start.m_cq, m_start.m_cq, this);
 					}
-					std::tuple<bool, const TRequest, TResponse&, ::grpc::ServerContext&> await_resume() const noexcept {
-						return {m_self->m_start_ok, m_request, m_self->m_response, m_self->m_context};
+					std::tuple<bool, TResponse&, ::grpc::ServerContext&> await_resume() const noexcept {
+						return {m_self->m_start_ok, m_self->m_response, m_self->m_context};
 					}
 				};
 				return awaiter{this, s};
+			}
+
+			auto await_transform(read_tag<TRequest> t) noexcept {
+				struct awaiter : asyncpp::grpc::calldata_interface {
+					awaiter(promise_type* self, TRequest* r) : m_self{self}, m_msg{r} {}
+					promise_type* m_self;
+					TRequest* m_msg;
+					bool m_ok{false};
+					asyncpp::coroutine_handle<> m_handle{};
+					void handle_event(size_t, bool ok) noexcept override {
+						m_ok = ok;
+						m_handle.resume();
+					}
+					constexpr bool await_ready() const noexcept { return false; }
+					constexpr void await_suspend(asyncpp::coroutine_handle<> h) noexcept {
+						m_handle = h;
+						m_self->m_reader.Read(m_msg, this);
+					}
+					constexpr bool await_resume() const noexcept { return m_ok; }
+				};
+				return awaiter{this, t.m_msg};
 			}
 
 			template<typename U>
@@ -103,25 +136,25 @@ namespace asyncpp::grpc {
 		using handle_t = asyncpp::coroutine_handle<promise_type>;
 
 		/// \brief Construct from a handle
-		server_unary_task(handle_t h) : m_coro{h} {
+		client_streaming_task(handle_t h) : m_coro{h} {
 			if (!m_coro) throw std::invalid_argument("m_coro is invalid");
 			m_coro.resume();
 		}
 
 		/// \brief Move constructor
-		server_unary_task(server_unary_task&& t) noexcept : m_coro(std::exchange(t.m_coro, {})) {}
+		client_streaming_task(client_streaming_task&& t) noexcept : m_coro(std::exchange(t.m_coro, {})) {}
 
 		/// \brief Move assignment
-		server_unary_task& operator=(server_unary_task&& t) noexcept {
+		client_streaming_task& operator=(client_streaming_task&& t) noexcept {
 			m_coro = std::exchange(t.m_coro, m_coro);
 			return *this;
 		}
 
-		server_unary_task(const server_unary_task& o) : m_coro{o.m_coro} {
+		client_streaming_task(const client_streaming_task& o) : m_coro{o.m_coro} {
 			if (m_coro) m_coro.promise().ref();
 		}
 
-		server_unary_task& operator=(const server_unary_task& o) {
+		client_streaming_task& operator=(const client_streaming_task& o) {
 			if (m_coro) m_coro.promise().unref();
 			m_coro = o.m_coro;
 			if (m_coro) m_coro.promise().ref();
@@ -129,7 +162,7 @@ namespace asyncpp::grpc {
 		}
 
 		/// \brief Destructor
-		~server_unary_task() {
+		~client_streaming_task() {
 			// Since we still have the coroutine, it has never been fire_and_forgeted, so we need to destroy it
 			if (m_coro) m_coro.promise().unref();
 		}
@@ -138,10 +171,4 @@ namespace asyncpp::grpc {
 		handle_t m_coro;
 	};
 
-	template<typename TService, typename TRequest, typename TResponse, typename TService2>
-	start_unary_tag<TService, TRequest, TResponse> start(void (TService::*fn)(::grpc::ServerContext*, TRequest*, ::grpc::ServerAsyncResponseWriter<TResponse>*,
-																			  ::grpc::CompletionQueue*, ::grpc::ServerCompletionQueue*, void*),
-														 TService2* s, ::grpc::ServerCompletionQueue* cq) {
-		return start_unary_tag<TService, TRequest, TResponse>{fn, s, cq};
-	}
 } // namespace asyncpp::grpc

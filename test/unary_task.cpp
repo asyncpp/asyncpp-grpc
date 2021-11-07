@@ -1,12 +1,12 @@
 #include "test_async_server.h"
 #include <asyncpp/fire_and_forget.h>
 #include <asyncpp/grpc/generic_method_awaiter.h>
-#include <asyncpp/grpc/server_unary_task.h>
+#include <asyncpp/grpc/unary_task.h>
 #include <gtest/gtest.h>
 
 using namespace asyncpp::grpc;
 
-server_unary_task<DummyUnaryResponse> run_async_dummy_unary(DummyService::AsyncService* service, ::grpc::ServerCompletionQueue* cq) {
+unary_task<DummyUnaryResponse> run_async_dummy_unary(DummyService::AsyncService* service, ::grpc::ServerCompletionQueue* cq) {
 	auto [ok, req, resp, ctx] = co_await start(&DummyService::AsyncService::RequestDummyUnary, service, cq);
 	if (!ok) co_return ::grpc::Status::CANCELLED;
 	run_async_dummy_unary(service, cq);

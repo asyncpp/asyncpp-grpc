@@ -1,30 +1,12 @@
 #include "test_cq.h"
 #include "test_server.h"
-#include <asyncpp/grpc/client_unary.h>
+#include <asyncpp/grpc/unary_call.h>
 #include <asyncpp/grpc/util.h>
 #include <asyncpp/sync_wait.h>
 #include <asyncpp/task.h>
 #include <gtest/gtest.h>
 
 using namespace asyncpp::grpc;
-
-TEST(ASYNCPP_GRPC, GrpcAsyncUnaryFinish) {
-	test_server server;
-	test_cq cq;
-	asyncpp::as_promise([](std::unique_ptr<DummyService::Stub> stub, ::grpc::CompletionQueue& cq) -> asyncpp::task<> {
-		DummyUnaryRequest req;
-		DummyUnaryResponse resp;
-		::grpc::ClientContext ctx;
-
-		req.set_name("Dummy");
-		auto res = stub->AsyncDummyUnary(&ctx, req, &cq);
-		auto status = co_await finish(res, resp);
-
-		if (!status.ok()) throw std::runtime_error("!status.ok()");
-		if (resp.response() != "Hello " + req.name()) throw std::runtime_error("resp.response() != expected");
-		co_return;
-	}(server.stub(), cq));
-}
 
 TEST(ASYNCPP_GRPC, GrpcAsyncUnaryCall) {
 	test_server server;
@@ -39,9 +21,6 @@ TEST(ASYNCPP_GRPC, GrpcAsyncUnaryCall) {
 			.get();
 	ASSERT_TRUE(status.ok());
 	ASSERT_EQ(c.response.response(), "Hello " + c.request.name());
-	ASSERT_EQ(c.status.error_code(), status.error_code());
-	ASSERT_EQ(c.status.error_details(), status.error_details());
-	ASSERT_EQ(c.status.error_message(), status.error_message());
 }
 
 TEST(ASYNCPP_GRPC, GrpcTraits) {

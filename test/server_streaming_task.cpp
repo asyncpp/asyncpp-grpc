@@ -1,10 +1,10 @@
 #include "test_async_server.h"
-#include <asyncpp/grpc/server_server_streaming_task.h>
+#include <asyncpp/grpc/server_streaming_task.h>
 #include <gtest/gtest.h>
 
 using namespace asyncpp::grpc;
 
-server_server_streaming_task<DummyServerStreamingResponse> run_async_dummy_server_streaming(DummyService::AsyncService* service,
+server_streaming_task<DummyServerStreamingResponse> run_async_dummy_server_streaming(DummyService::AsyncService* service,
 																							::grpc::ServerCompletionQueue* cq) {
 	auto [ok, req, ctx] = co_await start(&DummyService::AsyncService::RequestDummyServerStreaming, service, cq);
 	if (!ok) co_return ::grpc::Status::CANCELLED;
