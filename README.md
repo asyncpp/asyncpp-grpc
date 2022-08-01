@@ -1,6 +1,6 @@
 # Async++ GRPC library
 This library provides a c++20 coroutine wrapper around grpc generated functions.
-It is an addition to async++ which provides general coroutine tasks and support classes.
+It is an addition to [async++](https://github.com/Thalhammer/asyncpp) which provides general coroutine tasks and support classes.
 
 Tested and supported compilers:
 * Clang 12
