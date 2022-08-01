@@ -6,7 +6,7 @@ namespace asyncpp::grpc::util {
 
 	std::string demangle_typename(std::string to_demangle) {
 		int status = 0;
-		char* buff = __cxxabiv1::__cxa_demangle(to_demangle.c_str(), NULL, NULL, &status);
+		char* buff = __cxxabiv1::__cxa_demangle(to_demangle.c_str(), nullptr, nullptr, &status);
 		if (!buff) return to_demangle;
 		std::string demangled = buff;
 		std::free(buff);
@@ -20,7 +20,6 @@ namespace asyncpp::grpc::util {
 		try {
 			std::rethrow_exception(e);
 		} catch (...) { return current_exception_type(); }
-		return typeid(unknown_exception_type);
 	}
 
 	const std::type_info& current_exception_type() {
@@ -36,7 +35,6 @@ namespace asyncpp::grpc::util {
 		} catch (const std::exception& e) { return e.what(); } catch (...) {
 			return demangle_typename(current_exception_type().name());
 		}
-		return "unknown";
 	}
 
 	std::string current_exception_message() { return exception_message(std::current_exception()); }
@@ -44,7 +42,9 @@ namespace asyncpp::grpc::util {
 	::grpc::Status exception_to_status(std::exception_ptr e) {
 		try {
 			std::rethrow_exception(e);
-		} catch (const ::grpc::Status& s) { return s; } catch (const grpc_exception& s) {
+		} catch (const ::grpc::Status& s) { //
+			return s;
+		} catch (const grpc_exception& s) { //
 			return s.get_status();
 		} catch (const std::exception& s) {
 #ifdef NDEBUG

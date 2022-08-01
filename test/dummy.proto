@@ -17,8 +17,8 @@ message DummyServerStreamingResponse { string response = 1; }
 
 message DummyClientStreamingRequest { string msg = 1; }
 
-message DummyClientStreamingResponse { int64 count = 1; }
+message DummyClientStreamingResponse { uint64 count = 1; }
 
 message DummyBidiStreamingRequest { string msg = 1; }
 
-message DummyBidiStreamingResponse { int64 count = 1; }
+message DummyBidiStreamingResponse { uint64 count = 1; }

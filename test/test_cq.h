@@ -19,7 +19,7 @@ public:
 			}
 		});
 	}
-	~test_cq() {
+	~test_cq() override {
 		Shutdown();
 		if (m_th.joinable()) m_th.join();
 	}

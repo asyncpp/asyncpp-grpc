@@ -55,11 +55,9 @@ if(BUILD_TEST)
 
     add_executable(asyncpp_grpc-test
         ${PROTO_SRCS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/unary_call.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/bidi_streaming_task.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/client_streaming_task.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/server_streaming_task.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/unary_task.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/traits.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/call.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/task.cpp
     )
     target_link_libraries(asyncpp_grpc-test PRIVATE asyncpp_grpc GTest::GTest GTest::Main)
     target_include_directories(asyncpp_grpc-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/protos/)
