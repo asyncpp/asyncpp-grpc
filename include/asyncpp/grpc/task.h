@@ -1,4 +1,5 @@
 #pragma once
+#include <asyncpp/detail/promise_allocator_base.h>
 #include <asyncpp/detail/std_import.h>
 #include <asyncpp/grpc/calldata_interface.h>
 #include <asyncpp/grpc/rw_tag.h>
@@ -93,7 +94,7 @@ namespace asyncpp::grpc {
 		[[no_unique_address]] std::conditional_t<traits::is_client_streaming, empty_type, typename traits::request_type> m_request{};
 		[[no_unique_address]] std::conditional_t<traits::is_server_streaming, empty_type, typename traits::response_type> m_response{};
 
-		template<auto FN>
+		template<auto FN, detail::ByteAllocator Allocator>
 		friend class task;
 
 		task_rpc_context(const task_rpc_context&) = delete;
@@ -103,17 +104,18 @@ namespace asyncpp::grpc {
 	};
 
 	/** \brief Coroutine type for grpc server tasks */
-	template<auto FN>
+	template<auto FN, detail::ByteAllocator Allocator = std::allocator<std::byte>>
 	struct task {
 		using traits = method_traits<decltype(FN)>;
 		// Promise type of this task
-		class promise_type {
+		class promise_type : public detail::promise_allocator_base<Allocator> {
 			using context_type = task_rpc_context<traits::type, typename traits::request_type, typename traits::response_type>;
 
 		public:
 			static_assert(traits::is_server_side, "Method provided to grpc::task is not a serverside task");
 
-			constexpr promise_type(typename traits::service_type* service, ::grpc::ServerCompletionQueue* cq) noexcept
+			template<typename... Args>
+			constexpr promise_type(typename traits::service_type* service, ::grpc::ServerCompletionQueue* cq, Args&...) noexcept
 				: m_service{service}, m_context{cq}, m_status{} {}
 
 			~promise_type() noexcept = default;
