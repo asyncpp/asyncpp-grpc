@@ -94,7 +94,7 @@ namespace asyncpp::grpc {
 		[[no_unique_address]] std::conditional_t<traits::is_client_streaming, empty_type, typename traits::request_type> m_request{};
 		[[no_unique_address]] std::conditional_t<traits::is_server_streaming, empty_type, typename traits::response_type> m_response{};
 
-		template<auto FN, detail::ByteAllocator Allocator>
+		template<auto FN, ByteAllocator Allocator>
 		friend class task;
 
 		task_rpc_context(const task_rpc_context&) = delete;
@@ -104,7 +104,7 @@ namespace asyncpp::grpc {
 	};
 
 	/** \brief Coroutine type for grpc server tasks */
-	template<auto FN, detail::ByteAllocator Allocator = std::allocator<std::byte>>
+	template<auto FN, ByteAllocator Allocator = default_allocator_type>
 	struct task {
 		using traits = method_traits<decltype(FN)>;
 		// Promise type of this task
