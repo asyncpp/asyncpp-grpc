@@ -22,8 +22,8 @@ if(HAS_PARENT)
     set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} PARENT_SCOPE)
 endif()
 
-option(BUILD_TEST "Enable test builds" ON)
-option(WITH_ASAN "Enable asan for test builds" ON)
+option(ASYNCPP_BUILD_TEST "Enable test builds" ON)
+option(ASYNCPP_WITH_ASAN "Enable asan for test builds" ON)
 
 if (TARGET asyncpp)
     message(STATUS "Using existing asyncpp target.")
@@ -39,7 +39,7 @@ target_link_libraries(asyncpp_grpc PUBLIC asyncpp gRPC::grpc++ protobuf::libprot
 target_include_directories(asyncpp_grpc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(asyncpp_grpc PUBLIC cxx_std_20)
 
-if(BUILD_TEST)
+if(ASYNCPP_BUILD_TEST)
     enable_testing()
     include(GoogleTest)
     if(HUNTER_ENABLED)
@@ -62,7 +62,7 @@ if(BUILD_TEST)
     target_link_libraries(asyncpp_grpc-test PRIVATE asyncpp_grpc GTest::GTest GTest::Main)
     target_include_directories(asyncpp_grpc-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/protos/)
 
-    if(WITH_ASAN)
+    if(ASYNCPP_WITH_ASAN)
         message(STATUS "Building with asan enabled")
         target_compile_options(asyncpp_grpc-test PRIVATE -fsanitize=address)
         target_link_libraries(asyncpp_grpc-test PRIVATE asan)

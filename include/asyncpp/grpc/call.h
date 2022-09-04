@@ -14,9 +14,9 @@ namespace asyncpp::grpc {
 		std::unique_ptr<::grpc::ClientContext> m_context;
 		typename traits::service_type* m_stub;
 
-		unary_call(typename traits::service_type* stub) : m_stub{stub}, m_context{std::make_unique<::grpc::ClientContext>()} {}
+		unary_call(typename traits::service_type* stub) : m_context{std::make_unique<::grpc::ClientContext>()}, m_stub{stub} {}
 		unary_call(typename traits::service_type* stub, ::grpc::ServerContext& ctx, ::grpc::PropagationOptions opts = {})
-			: m_stub{stub}, m_context{::grpc::ClientContext::FromServerContext(ctx, opts)} {}
+			: m_context{::grpc::ClientContext::FromServerContext(ctx, opts)}, m_stub{stub} {}
 		unary_call(const std::unique_ptr<typename traits::service_type>& stub) : unary_call{stub.get()} {}
 		unary_call(const std::unique_ptr<typename traits::service_type>& stub, ::grpc::ServerContext& ctx, ::grpc::PropagationOptions opts = {})
 			: unary_call{stub.get(), ctx, opts} {}
