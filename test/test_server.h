@@ -34,23 +34,26 @@ public:
 		return ::grpc::Status::OK;
 	}
 
-	::grpc::Status DummyServerStreaming(::grpc::ServerContext* context, const ::DummyServerStreamingRequest* request, ::grpc::ServerWriter< ::DummyServerStreamingResponse>* writer) override {
+	::grpc::Status DummyServerStreaming(::grpc::ServerContext* context, const ::DummyServerStreamingRequest* request,
+										::grpc::ServerWriter<::DummyServerStreamingResponse>* writer) override {
 		DummyServerStreamingResponse resp;
-		for(size_t i=0; i<10; i++) {
+		for (size_t i = 0; i < 10; i++) {
 			resp.set_response(request->format() + std::to_string(i));
 			writer->Write(resp);
 		}
 		return ::grpc::Status::OK;
 	}
 
-    ::grpc::Status DummyClientStreaming(::grpc::ServerContext* context, ::grpc::ServerReader<::DummyClientStreamingRequest>* reader, ::DummyClientStreamingResponse* response) override {
+	::grpc::Status DummyClientStreaming(::grpc::ServerContext* context, ::grpc::ServerReader<::DummyClientStreamingRequest>* reader,
+										::DummyClientStreamingResponse* response) override {
 		for (DummyClientStreamingRequest req{}; reader->Read(&req);) {
 			response->set_count(response->count() + req.msg().size());
 		}
 		return ::grpc::Status::OK;
 	}
 
-    ::grpc::Status DummyBidiStreaming(::grpc::ServerContext* context, ::grpc::ServerReaderWriter<::DummyBidiStreamingResponse, ::DummyBidiStreamingRequest>* stream) override {
+	::grpc::Status DummyBidiStreaming(::grpc::ServerContext* context,
+									  ::grpc::ServerReaderWriter<::DummyBidiStreamingResponse, ::DummyBidiStreamingRequest>* stream) override {
 		DummyBidiStreamingResponse resp;
 		for (DummyBidiStreamingRequest req; stream->Read(&req);) {
 			resp.set_count(req.msg().size());
@@ -58,5 +61,4 @@ public:
 		}
 		return ::grpc::Status::OK;
 	}
-
 };

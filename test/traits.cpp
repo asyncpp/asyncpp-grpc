@@ -1,5 +1,5 @@
-#include <dummy.grpc.pb.h>
 #include <asyncpp/grpc/traits.h>
+#include <dummy.grpc.pb.h>
 #include <gtest/gtest.h>
 
 using namespace asyncpp::grpc;

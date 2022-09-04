@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
+
 if(HUNTER_ENABLED)
     include("cmake/HunterGate.cmake")
     HunterGate(
@@ -7,6 +8,7 @@ if(HUNTER_ENABLED)
         LOCAL
     )
 endif()
+
 project(AsyncppGRPC)
 
 find_package(Threads REQUIRED)
@@ -14,18 +16,20 @@ find_package(Threads REQUIRED)
 if(HUNTER_ENABLED)
     hunter_add_package(gRPC)
 endif()
+
 find_package(gRPC CONFIG REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)
+
 if(HAS_PARENT)
-    set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} PARENT_SCOPE)
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
 endif()
 
 option(ASYNCPP_BUILD_TEST "Enable test builds" ON)
 option(ASYNCPP_WITH_ASAN "Enable asan for test builds" ON)
 
-if (TARGET asyncpp)
+if(TARGET asyncpp)
     message(STATUS "Using existing asyncpp target.")
 else()
     message(STATUS "Missing asyncpp, using Fetch to import it.")
@@ -42,13 +46,14 @@ target_compile_features(asyncpp_grpc PUBLIC cxx_std_20)
 if(ASYNCPP_BUILD_TEST)
     enable_testing()
     include(GoogleTest)
+
     if(HUNTER_ENABLED)
-      hunter_add_package(GTest)
-      find_package(GTest CONFIG REQUIRED)
-      add_library(GTest::GTest ALIAS GTest::gtest)
-      add_library(GTest::Main ALIAS GTest::gtest_main)
+        hunter_add_package(GTest)
+        find_package(GTest CONFIG REQUIRED)
+        add_library(GTest::GTest ALIAS GTest::gtest)
+        add_library(GTest::Main ALIAS GTest::gtest_main)
     else()
-      find_package(GTest REQUIRED)
+        find_package(GTest REQUIRED)
     endif()
 
     include(cmake/GenerateGRPC.cmake)
