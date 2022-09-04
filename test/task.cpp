@@ -90,7 +90,8 @@ namespace {
 		co_return ::grpc::Status::OK;
 	}
 
-	alloc_task<&Service::RequestDummyClientStreaming> run_async_dummy_client_streaming_alloc(Service* service, ::grpc::ServerCompletionQueue* cq, debug_allocator& alloc) {
+	alloc_task<&Service::RequestDummyClientStreaming> run_async_dummy_client_streaming_alloc(Service* service, ::grpc::ServerCompletionQueue* cq,
+																							 debug_allocator& alloc) {
 		// Initiate next call
 		run_async_dummy_client_streaming_alloc(service, cq, alloc);
 
@@ -128,7 +129,8 @@ namespace {
 		co_return ::grpc::Status::OK;
 	}
 
-	alloc_task<&Service::RequestDummyServerStreaming> run_async_dummy_server_streaming_alloc(Service* service, ::grpc::ServerCompletionQueue* cq, debug_allocator& alloc) {
+	alloc_task<&Service::RequestDummyServerStreaming> run_async_dummy_server_streaming_alloc(Service* service, ::grpc::ServerCompletionQueue* cq,
+																							 debug_allocator& alloc) {
 		// Initiate next call
 		run_async_dummy_server_streaming_alloc(service, cq, alloc);
 

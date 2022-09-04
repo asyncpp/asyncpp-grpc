@@ -5,8 +5,8 @@ namespace asyncpp::grpc {
 	struct rpc_info_tag {};
 	constexpr rpc_info_tag rpc_info() noexcept { return {}; }
 
-    struct send_initial_metadata_tag {};
-    constexpr send_initial_metadata_tag send_initial_metadata() noexcept { return {}; }
+	struct send_initial_metadata_tag {};
+	constexpr send_initial_metadata_tag send_initial_metadata() noexcept { return {}; }
 
 	template<typename T>
 	struct write_tag {
