@@ -3,11 +3,7 @@ project(AsyncppGRPC)
 
 find_package(Threads REQUIRED)
 
-if(HUNTER_ENABLED)
-  hunter_add_package(gRPC)
-endif()
-
-find_package(gRPC CONFIG REQUIRED)
+include(cmake/GetGRPC.cmake)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 get_directory_property(HAS_PARENT PARENT_DIRECTORY)

@@ -3,6 +3,8 @@
 #include <asyncpp/ptr_tag.h>
 #include <dummy.grpc.pb.h>
 #include <grpcpp/server_builder.h>
+#include <grpcpp/server.h>
+#include <grpcpp/channel.h>
 #include <thread>
 
 class test_async_server : public DummyService::AsyncService {
