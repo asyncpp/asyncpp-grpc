@@ -2,6 +2,8 @@
 #include <asyncpp/grpc/calldata_interface.h>
 #include <asyncpp/ptr_tag.h>
 #include <dummy.grpc.pb.h>
+#include <grpcpp/channel.h>
+#include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <thread>
 

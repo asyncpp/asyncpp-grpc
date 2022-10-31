@@ -120,7 +120,7 @@ namespace asyncpp::grpc {
 
 			~promise_type() noexcept = default;
 
-			coroutine_handle<promise_type> get_return_object() noexcept { return coroutine_handle<promise_type>::from_promise(*this); }
+			coroutine_handle<> get_return_object() noexcept { return coroutine_handle<promise_type>::from_promise(*this); }
 
 			void return_value(::grpc::Status s) noexcept { m_status = std::move(s); }
 

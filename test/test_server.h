@@ -1,5 +1,7 @@
 #pragma once
 #include <dummy.grpc.pb.h>
+#include <grpcpp/channel.h>
+#include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/support/status.h>
 #include <memory>

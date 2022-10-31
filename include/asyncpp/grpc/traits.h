@@ -1,7 +1,9 @@
 #pragma once
+#include <grpcpp/client_context.h>
+#include <grpcpp/completion_queue.h>
 #include <grpcpp/impl/codegen/async_stream.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
-#include <grpcpp/impl/codegen/server_context.h>
+#include <grpcpp/server_context.h>
 #include <type_traits>
 
 namespace asyncpp::grpc {
