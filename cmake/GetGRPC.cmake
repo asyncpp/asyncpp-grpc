@@ -1,46 +1,55 @@
 if(HUNTER_ENABLED)
   hunter_add_package(gRPC)
   find_package(gRPC CONFIG REQUIRED)
+  hunter_add_package(Protobuf)
+  find_package(Protobuf CONFIG REQUIRED)
+  hunter_add_package(OpenSSL)
+  find_package(OpenSSL REQUIRED)
 else()
   find_package(gRPC CONFIG)
-  if(NOT gRPC_FOUND)
+  find_package(Protobuf CONFIG)
+  if(NOT gRPC_FOUND OR NOT Protobuf_FOUND)
     find_package(PkgConfig)
     if(PKG_CONFIG_FOUND)
       pkg_search_module(gRPC IMPORTED_TARGET grpc)
       pkg_search_module(gRPCPP IMPORTED_TARGET grpc++>=1.16.0)
       pkg_search_module(GPR IMPORTED_TARGET gpr)
       find_program(gRPCPP_PB_PLUGIN grpc_cpp_plugin)
-      pkg_search_module(PROTOBUF IMPORTED_TARGET protobuf)
-      find_program(PROTOBUF_PROTOC protoc)
+      pkg_search_module(Protobuf IMPORTED_TARGET protobuf)
+      find_program(Protobuf_PROTOC protoc)
       if(gRPC_FOUND
          AND gRPCPP_FOUND
-         AND PROTOBUF_FOUND
+         AND Protobuf_FOUND
          AND GPR_FOUND
          AND NOT gRPCPP_PB_PLUGIN STREQUAL "gRPCPP_PB_PLUGIN-NOTFOUND"
-         AND NOT PROTOBUF_PROTOC STREQUAL "PROTOBUF_PROTOC-NOTFOUND")
+         AND NOT Protobuf_PROTOC STREQUAL "Protobuf_PROTOC-NOTFOUND")
         message(STATUS "Using system grpc/protobuf")
         set_target_properties(PkgConfig::gRPC PROPERTIES IMPORTED_GLOBAL TRUE)
         set_target_properties(PkgConfig::gRPCPP PROPERTIES IMPORTED_GLOBAL TRUE)
         set_target_properties(PkgConfig::GPR PROPERTIES IMPORTED_GLOBAL TRUE)
-        set_target_properties(PkgConfig::PROTOBUF PROPERTIES IMPORTED_GLOBAL
+        set_target_properties(PkgConfig::Protobuf PROPERTIES IMPORTED_GLOBAL
                                                              TRUE)
         add_library(gRPC::grpc ALIAS PkgConfig::gRPC)
         target_link_libraries(PkgConfig::gRPC INTERFACE PkgConfig::GPR)
+        # Building with TSAN/ASAN causes runtime errors if grpc is built without,
+        # see https://github.com/grpc/grpc/issues/19224 for details
+        target_compile_definitions(PkgConfig::gRPC INTERFACE GRPC_ASAN_SUPPRESSED)
         add_library(gRPC::grpc++ ALIAS PkgConfig::gRPCPP)
         target_link_libraries(PkgConfig::gRPCPP INTERFACE PkgConfig::GPR)
+        target_compile_definitions(PkgConfig::gRPCPP INTERFACE GRPC_ASAN_SUPPRESSED)
         add_executable(gRPC::grpc_cpp_plugin IMPORTED)
         set_property(TARGET gRPC::grpc_cpp_plugin PROPERTY IMPORTED_LOCATION
                                                            ${gRPCPP_PB_PLUGIN})
-        add_library(protobuf::libprotobuf ALIAS PkgConfig::PROTOBUF)
+        add_library(protobuf::libprotobuf ALIAS PkgConfig::Protobuf)
         add_executable(protobuf::protoc IMPORTED)
         set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION
-                                                      ${PROTOBUF_PROTOC})
+                                                      ${Protobuf_PROTOC})
       else()
         unset(gRPC_FOUND)
       endif()
     endif()
   endif()
-  if(NOT gRPC_FOUND)
+  if(NOT gRPC_FOUND OR NOT Protobuf_FOUND)
     message(STATUS "Using FetchContent for GRPC")
     set(gRPC_BUILD_TESTS
         OFF

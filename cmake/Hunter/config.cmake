@@ -13,3 +13,9 @@ hunter_config(
   gRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF
   gRPC_BUILD_GRPC_RUBY_PLUGIN=OFF
   CMAKE_C_FLAGS=-ffunction-sections\ -fdata-sections)
+
+hunter_config(
+    Protobuf
+    VERSION 3.19.4-p0
+    CMAKE_ARGS CMAKE_POSITION_INDEPENDENT_CODE=ON
+)
