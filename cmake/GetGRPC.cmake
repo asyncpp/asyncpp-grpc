@@ -31,12 +31,14 @@ else()
                                                              TRUE)
         add_library(gRPC::grpc ALIAS PkgConfig::gRPC)
         target_link_libraries(PkgConfig::gRPC INTERFACE PkgConfig::GPR)
-        # Building with TSAN/ASAN causes runtime errors if grpc is built without,
-        # see https://github.com/grpc/grpc/issues/19224 for details
-        target_compile_definitions(PkgConfig::gRPC INTERFACE GRPC_ASAN_SUPPRESSED)
+        # Building with TSAN/ASAN causes runtime errors if grpc is built
+        # without. See https://github.com/grpc/grpc/issues/19224 for details
+        target_compile_definitions(PkgConfig::gRPC
+                                   INTERFACE GRPC_ASAN_SUPPRESSED)
         add_library(gRPC::grpc++ ALIAS PkgConfig::gRPCPP)
         target_link_libraries(PkgConfig::gRPCPP INTERFACE PkgConfig::GPR)
-        target_compile_definitions(PkgConfig::gRPCPP INTERFACE GRPC_ASAN_SUPPRESSED)
+        target_compile_definitions(PkgConfig::gRPCPP
+                                   INTERFACE GRPC_ASAN_SUPPRESSED)
         add_executable(gRPC::grpc_cpp_plugin IMPORTED)
         set_property(TARGET gRPC::grpc_cpp_plugin PROPERTY IMPORTED_LOCATION
                                                            ${gRPCPP_PB_PLUGIN})
