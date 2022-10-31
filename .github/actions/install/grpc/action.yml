@@ -3,5 +3,5 @@ description: Install and setup GRPC, Protobuf and protoc
 runs:
   using: composite
   steps:
-    - run: sudo apt-get install libgrpc++-dev libgrpc-dev protobuf-compiler protobuf-compiler-grpc libprotobuf-dev
+    - run: sudo apt-get update && sudo apt-get install libgrpc++-dev libgrpc-dev protobuf-compiler protobuf-compiler-grpc libprotobuf-dev
       shell: bash
