@@ -19,9 +19,9 @@ else()
       find_program(Protobuf_PROTOC protoc)
       if(gRPC_FOUND
          AND gRPCPP_FOUND
-         AND Protobuf_FOUND
          AND GPR_FOUND
          AND NOT gRPCPP_PB_PLUGIN STREQUAL "gRPCPP_PB_PLUGIN-NOTFOUND"
+         AND Protobuf_FOUND
          AND NOT Protobuf_PROTOC STREQUAL "Protobuf_PROTOC-NOTFOUND")
         message(STATUS "Using system grpc/protobuf")
         set_target_properties(PkgConfig::gRPC PROPERTIES IMPORTED_GLOBAL TRUE)
@@ -39,11 +39,11 @@ else()
         target_link_libraries(PkgConfig::gRPCPP INTERFACE PkgConfig::GPR)
         target_compile_definitions(PkgConfig::gRPCPP
                                    INTERFACE GRPC_ASAN_SUPPRESSED)
-        add_executable(gRPC::grpc_cpp_plugin IMPORTED)
+        add_executable(gRPC::grpc_cpp_plugin IMPORTED GLOBAL)
         set_property(TARGET gRPC::grpc_cpp_plugin PROPERTY IMPORTED_LOCATION
                                                            ${gRPCPP_PB_PLUGIN})
         add_library(protobuf::libprotobuf ALIAS PkgConfig::Protobuf)
-        add_executable(protobuf::protoc IMPORTED)
+        add_executable(protobuf::protoc IMPORTED GLOBAL)
         set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION
                                                       ${Protobuf_PROTOC})
       else()
