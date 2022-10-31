@@ -36,14 +36,7 @@ if(ASYNCPP_BUILD_TEST)
   enable_testing()
   include(GoogleTest)
 
-  if(HUNTER_ENABLED)
-    hunter_add_package(GTest)
-    find_package(GTest CONFIG REQUIRED)
-    add_library(GTest::GTest ALIAS GTest::gtest)
-    add_library(GTest::Main ALIAS GTest::gtest_main)
-  else()
-    find_package(GTest REQUIRED)
-  endif()
+  include(cmake/GetGTest.cmake)
 
   include(cmake/GenerateGRPC.cmake)
   set(PROTOBUF_GENERATE_CPP_APPEND_PATH TRUE)
@@ -56,8 +49,8 @@ if(ASYNCPP_BUILD_TEST)
     ${PROTO_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/test/traits.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/call.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/task.cpp)
-  target_link_libraries(asyncpp_grpc-test PRIVATE asyncpp_grpc GTest::GTest
-                                                  GTest::Main)
+  target_link_libraries(asyncpp_grpc-test PRIVATE asyncpp_grpc GTest::gtest
+                                                  GTest::gtest_main)
   target_include_directories(asyncpp_grpc-test
                              PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/protos/)
 
