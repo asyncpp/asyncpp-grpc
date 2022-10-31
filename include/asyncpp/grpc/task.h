@@ -223,7 +223,7 @@ namespace asyncpp::grpc {
 		};
 
 		/// \brief Construct from a handle
-		task(coroutine_handle<> h) {
+		task(coroutine_handle<promise_type> h) {
 			if (!h) throw std::invalid_argument("handle is invalid");
 		}
 	};
