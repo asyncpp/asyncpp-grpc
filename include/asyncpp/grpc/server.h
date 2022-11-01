@@ -100,7 +100,8 @@ namespace asyncpp::grpc {
 
 	class server_builder::service_builder_base {
 		friend class server_builder;
-    protected:
+
+	protected:
 		server_builder* m_parent;
 		service_builder_base(server_builder* parent) noexcept : m_parent(parent) {}
 

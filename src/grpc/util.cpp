@@ -17,13 +17,13 @@ namespace asyncpp::grpc::util {
 
 	const std::type_info& exception_type(std::exception_ptr e) {
 		if (!e) return typeid(unknown_exception_type);
-		#ifdef __GLIBCXX__
-			return *e.__cxa_exception_type();
-		#else
+#ifdef __GLIBCXX__
+		return *e.__cxa_exception_type();
+#else
 		try {
 			std::rethrow_exception(e);
 		} catch (...) { return current_exception_type(); }
-		#endif
+#endif
 	}
 
 	const std::type_info& current_exception_type() {
