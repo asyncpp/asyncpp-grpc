@@ -24,7 +24,9 @@ else()
   include(cmake/Fetch_asyncpp.cmake)
 endif()
 
-add_library(asyncpp_grpc ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/util.cpp)
+add_library(asyncpp_grpc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/server.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/util.cpp)
 target_link_libraries(
   asyncpp_grpc PUBLIC asyncpp gRPC::grpc++ protobuf::libprotobuf
                       Threads::Threads)
