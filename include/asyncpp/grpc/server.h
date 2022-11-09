@@ -142,7 +142,8 @@ namespace asyncpp::grpc {
 		}
 		template<typename... Args, typename FN>
 		service_builder& add_task(FN&& fn, Args... args) requires(std::is_invocable<FN, T*, ::grpc::ServerCompletionQueue*, Args...>::value) {
-			m_parent->m_cq_initializers.emplace_back([fn, service = m_service, args...](::grpc::ServerCompletionQueue* cq) mutable { fn(service, cq, args...); });
+			m_parent->m_cq_initializers.emplace_back(
+				[fn, service = m_service, args...](::grpc::ServerCompletionQueue* cq) mutable { fn(service, cq, args...); });
 			return *this;
 		}
 	};
