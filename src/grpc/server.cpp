@@ -13,6 +13,9 @@ namespace asyncpp::grpc {
 		for (size_t i = 0; i < thread_count; i++) {
 			m_threads.emplace_back([this, i]() mutable {
 				dispatcher::current(this);
+#ifdef __linux__
+				pthread_setname_np(pthread_self(), ("rpcworker_" + std::to_string(i)).c_str());
+#endif
 				auto cq = m_cqs[i].get();
 				for (auto& e : m_cq_initializers) {
 					e(cq);
