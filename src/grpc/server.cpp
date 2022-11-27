@@ -66,10 +66,10 @@ namespace asyncpp::grpc {
 	bool server::is_running() const noexcept { return m_server != nullptr; }
 
 	void server::stop() {
+		if (m_server) m_server->Shutdown();
 		for (auto& e : m_cqs) {
 			if (e) e->Shutdown();
 		}
-		if (m_server) m_server->Shutdown();
 		for (auto& e : m_threads) {
 			if (e.joinable()) e.join();
 		}
