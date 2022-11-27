@@ -207,13 +207,14 @@ namespace asyncpp::grpc {
 						case 1:
 							// Reset the state of context and stream
 							ctx.m_context.~ServerContext();
-							new(&ctx.m_context) ::grpc::ServerContext{};
+							new (&ctx.m_context)::grpc::ServerContext{};
 							ctx.m_stream = typename traits::stream_type{&ctx.m_context};
 							if constexpr (traits::is_client_streaming) {
 								(m_self->m_service->*(FN))(&ctx.m_context, &ctx.m_stream, ctx.m_cq, ctx.m_cq, ptr_tag<0, calldata_interface>(this));
 							} else {
 								ctx.m_request.Clear();
-								(m_self->m_service->*(FN))(&ctx.m_context, &ctx.m_request, &ctx.m_stream, ctx.m_cq, ctx.m_cq, ptr_tag<0, calldata_interface>(this));
+								(m_self->m_service->*(FN))(&ctx.m_context, &ctx.m_request, &ctx.m_stream, ctx.m_cq, ctx.m_cq,
+														   ptr_tag<0, calldata_interface>(this));
 							}
 						}
 					}
