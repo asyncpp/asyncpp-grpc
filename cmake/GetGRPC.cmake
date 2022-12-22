@@ -41,13 +41,17 @@ else()
         target_link_libraries(PkgConfig::gRPCPP INTERFACE PkgConfig::GPR)
         target_compile_definitions(PkgConfig::gRPCPP
                                    INTERFACE GRPC_ASAN_SUPPRESSED)
-        add_executable(gRPC::grpc_cpp_plugin IMPORTED GLOBAL)
-        set_property(TARGET gRPC::grpc_cpp_plugin PROPERTY IMPORTED_LOCATION
-                                                           ${gRPCPP_PB_PLUGIN})
+        if(NOT TARGET gRPC::grpc_cpp_plugin)
+          add_executable(gRPC::grpc_cpp_plugin IMPORTED GLOBAL)
+          set_property(TARGET gRPC::grpc_cpp_plugin PROPERTY IMPORTED_LOCATION
+                                                            ${gRPCPP_PB_PLUGIN})
+        endif()
         add_library(protobuf::libprotobuf ALIAS PkgConfig::Protobuf)
-        add_executable(protobuf::protoc IMPORTED GLOBAL)
-        set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION
-                                                      ${Protobuf_PROTOC})
+        if(NOT TARGET protobuf::protoc)
+          add_executable(protobuf::protoc IMPORTED GLOBAL)
+          set_property(TARGET protobuf::protoc PROPERTY IMPORTED_LOCATION
+                                                        ${Protobuf_PROTOC})
+        endif()
       else()
         unset(gRPC_FOUND)
       endif()
