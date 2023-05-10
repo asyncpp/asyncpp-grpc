@@ -1,7 +1,7 @@
 hunter_config(
   gRPC
   VERSION
-  1.34.0-p0
+  1.44.0-p0
   CMAKE_ARGS
   gRPC_BUILD_TESTS=OFF
   gRPC_BUILD_CSHARP_EXT=OFF
