@@ -146,5 +146,11 @@ namespace asyncpp::grpc {
 				[fn, service = m_service, args...](::grpc::ServerCompletionQueue* cq) mutable { fn(service, cq, args...); });
 			return *this;
 		}
+		template<typename Task, typename Class, typename... Args>
+		service_builder& add_task(Task(Class::*fn)(T*, ::grpc::ServerCompletionQueue*, Args...), Class* instance, Args... args) {
+			m_parent->m_cq_initializers.emplace_back(
+				[fn, service = m_service, instance, args...](::grpc::ServerCompletionQueue* cq) mutable { (instance->*fn)(service, cq, args...); });
+			return *this;
+		}
 	};
 } // namespace asyncpp::grpc

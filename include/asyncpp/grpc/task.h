@@ -170,6 +170,17 @@ namespace asyncpp::grpc {
 			requires(std::is_base_of_v<typename traits::service_type, TService>) constexpr promise_type(TService* service, ::grpc::ServerCompletionQueue* cq,
 																										Args&... args) noexcept
 				: m_service{service}, m_context{service, cq, args...} {}
+			
+			template<typename TClass, typename TService, typename... Args>
+			requires(std::is_base_of_v<typename traits::service_type, TService>) constexpr promise_type(TClass&, TService* service, ::grpc::ServerCompletionQueue* cq,
+																										Args&... args) noexcept
+				: m_service{service}, m_context{service, cq, args...} {}
+
+			// This is here to trick the compiler into thinking the above signature exists
+			// Somehow both gcc and llvm fail to detect that the member function overload
+			// above is a constructor that catches all arguments and thus passes none.
+			template<typename... Args>
+			constexpr promise_type(Args&&... args) noexcept = delete;
 
 			~promise_type() noexcept = default;
 
