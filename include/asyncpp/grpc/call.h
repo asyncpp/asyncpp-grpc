@@ -131,8 +131,9 @@ namespace asyncpp::grpc {
 		::grpc::ClientContext& context() noexcept { return *m_state->context; }
 		const ::grpc::ClientContext& context() const noexcept { return *m_state->context; }
 
-		auto start(const typename traits::request_type& req,
-				   ::grpc::CompletionQueue* cq) requires(!traits::is_client_streaming && traits::is_server_streaming) {
+		auto start(const typename traits::request_type& req, ::grpc::CompletionQueue* cq)
+			requires(!traits::is_client_streaming && traits::is_server_streaming)
+		{
 			struct awaiter : calldata_interface {
 				state* m_state;
 				const typename traits::request_type& m_request{};
@@ -160,7 +161,9 @@ namespace asyncpp::grpc {
 			return awaiter{m_state.get(), req, cq};
 		}
 
-		auto start(typename traits::response_type& resp, ::grpc::CompletionQueue* cq) requires(traits::is_client_streaming && !traits::is_server_streaming) {
+		auto start(typename traits::response_type& resp, ::grpc::CompletionQueue* cq)
+			requires(traits::is_client_streaming && !traits::is_server_streaming)
+		{
 			struct awaiter : calldata_interface {
 				state* m_state;
 				typename traits::response_type& m_response;
@@ -189,7 +192,9 @@ namespace asyncpp::grpc {
 			return awaiter{m_state.get(), resp, cq};
 		}
 
-		auto start(::grpc::CompletionQueue* cq) requires(traits::is_client_streaming&& traits::is_server_streaming) {
+		auto start(::grpc::CompletionQueue* cq)
+			requires(traits::is_client_streaming && traits::is_server_streaming)
+		{
 			struct awaiter : calldata_interface {
 				state* m_state;
 				::grpc::CompletionQueue* m_cq{};
@@ -217,7 +222,9 @@ namespace asyncpp::grpc {
 			return awaiter{m_state.get(), cq};
 		}
 
-		auto read(typename traits::response_type& resp) requires(traits::is_server_streaming) {
+		auto read(typename traits::response_type& resp)
+			requires(traits::is_server_streaming)
+		{
 			struct awaiter : calldata_interface {
 				state* m_state;
 				typename traits::response_type* m_resp;
@@ -243,7 +250,9 @@ namespace asyncpp::grpc {
 			return awaiter{m_state.get(), &resp};
 		}
 
-		auto write(const typename traits::request_type& msg) requires(traits::is_client_streaming) {
+		auto write(const typename traits::request_type& msg)
+			requires(traits::is_client_streaming)
+		{
 			if (!m_state || !m_state->stream) throw std::logic_error("No active call");
 			struct awaiter : calldata_interface {
 				state* m_state;
@@ -270,7 +279,9 @@ namespace asyncpp::grpc {
 			return awaiter{m_state.get(), msg};
 		}
 
-		auto write_last(const typename traits::request_type& msg) requires(traits::is_client_streaming) {
+		auto write_last(const typename traits::request_type& msg)
+			requires(traits::is_client_streaming)
+		{
 			if (!m_state || !m_state->stream) throw std::logic_error("No active call");
 			struct awaiter : calldata_interface {
 				state* m_state;
@@ -298,7 +309,9 @@ namespace asyncpp::grpc {
 			return awaiter{m_state.get(), msg};
 		}
 
-		auto writes_done() requires(traits::is_client_streaming) {
+		auto writes_done()
+			requires(traits::is_client_streaming)
+		{
 			if (!m_state || !m_state->stream) throw std::logic_error("No active call");
 			struct awaiter : calldata_interface {
 				state* m_state;

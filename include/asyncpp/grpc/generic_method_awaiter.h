@@ -8,7 +8,8 @@ namespace asyncpp::grpc {
 
 	template<typename TFunction, typename... Args>
 	struct grpc_generic_method_awaiter : calldata_interface {
-		grpc_generic_method_awaiter(TFunction fn, Args... args) requires(std::is_invocable_v<TFunction, Args..., void*>)
+		grpc_generic_method_awaiter(TFunction fn, Args... args)
+			requires(std::is_invocable_v<TFunction, Args..., void*>)
 			: m_function{fn}, m_args{std::forward_as_tuple(args...)} {}
 
 		TFunction m_function;

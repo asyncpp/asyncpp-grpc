@@ -141,13 +141,15 @@ namespace asyncpp::grpc {
 			return m_parent->add_service(host, instance);
 		}
 		template<typename... Args, typename FN>
-		service_builder& add_task(FN&& fn, Args... args) requires(std::is_invocable<FN, T*, ::grpc::ServerCompletionQueue*, Args...>::value) {
+		service_builder& add_task(FN&& fn, Args... args)
+			requires(std::is_invocable<FN, T*, ::grpc::ServerCompletionQueue*, Args...>::value)
+		{
 			m_parent->m_cq_initializers.emplace_back(
 				[fn, service = m_service, args...](::grpc::ServerCompletionQueue* cq) mutable { fn(service, cq, args...); });
 			return *this;
 		}
 		template<typename Task, typename Class, typename... Args>
-		service_builder& add_task(Task(Class::*fn)(T*, ::grpc::ServerCompletionQueue*, Args...), Class* instance, Args... args) {
+		service_builder& add_task(Task (Class::*fn)(T*, ::grpc::ServerCompletionQueue*, Args...), Class* instance, Args... args) {
 			m_parent->m_cq_initializers.emplace_back(
 				[fn, service = m_service, instance, args...](::grpc::ServerCompletionQueue* cq) mutable { (instance->*fn)(service, cq, args...); });
 			return *this;

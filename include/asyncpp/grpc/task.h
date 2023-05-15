@@ -58,10 +58,26 @@ namespace asyncpp::grpc {
 		const ::grpc::ServerContext& context() const noexcept { return m_context; }
 		::grpc::ServerCompletionQueue* completion_queue() const noexcept { return m_cq; }
 
-		typename traits::request_type& request() noexcept requires(!traits::is_client_streaming) { return m_request; }
-		const typename traits::request_type& request() const noexcept requires(!traits::is_client_streaming) { return m_request; }
-		typename traits::response_type& response() noexcept requires(!traits::is_server_streaming) { return m_response; }
-		const typename traits::response_type& response() const noexcept requires(!traits::is_server_streaming) { return m_response; }
+		typename traits::request_type& request() noexcept
+			requires(!traits::is_client_streaming)
+		{
+			return m_request;
+		}
+		const typename traits::request_type& request() const noexcept
+			requires(!traits::is_client_streaming)
+		{
+			return m_request;
+		}
+		typename traits::response_type& response() noexcept
+			requires(!traits::is_server_streaming)
+		{
+			return m_response;
+		}
+		const typename traits::response_type& response() const noexcept
+			requires(!traits::is_server_streaming)
+		{
+			return m_response;
+		}
 		THooks& hooks() noexcept { return m_hooks; }
 		const THooks& hooks() const noexcept { return m_hooks; }
 
@@ -87,7 +103,9 @@ namespace asyncpp::grpc {
 			return awaiter{this};
 		}
 
-		auto read(typename traits::request_type& msg) noexcept requires(traits::is_client_streaming) {
+		auto read(typename traits::request_type& msg) noexcept
+			requires(traits::is_client_streaming)
+		{
 			struct awaiter : calldata_interface {
 				awaiter(task_rpc_context* self, typename traits::request_type& msg) : m_self{self}, m_msg{msg} {}
 				task_rpc_context* m_self;
@@ -110,7 +128,9 @@ namespace asyncpp::grpc {
 			return awaiter{this, msg};
 		}
 
-		auto write(const typename traits::response_type& msg) noexcept requires(traits::is_server_streaming) {
+		auto write(const typename traits::response_type& msg) noexcept
+			requires(traits::is_server_streaming)
+		{
 			struct awaiter : calldata_interface {
 				awaiter(task_rpc_context* self, const typename traits::response_type& msg) : m_self{self}, m_msg{msg} {}
 				task_rpc_context* m_self;
@@ -167,13 +187,13 @@ namespace asyncpp::grpc {
 			static_assert(traits::is_server_side, "Method provided to grpc::task is not a serverside task");
 
 			template<typename TService, typename... Args>
-			requires(std::is_base_of_v<typename traits::service_type, TService>) constexpr promise_type(TService* service, ::grpc::ServerCompletionQueue* cq,
-																										Args&... args) noexcept
+				requires(std::is_base_of_v<typename traits::service_type, TService>)
+			constexpr promise_type(TService* service, ::grpc::ServerCompletionQueue* cq, Args&... args) noexcept
 				: m_service{service}, m_context{service, cq, args...} {}
-			
+
 			template<typename TClass, typename TService, typename... Args>
-			requires(std::is_base_of_v<typename traits::service_type, TService>) constexpr promise_type(TClass&, TService* service, ::grpc::ServerCompletionQueue* cq,
-																										Args&... args) noexcept
+				requires(std::is_base_of_v<typename traits::service_type, TService>)
+			constexpr promise_type(TClass&, TService* service, ::grpc::ServerCompletionQueue* cq, Args&... args) noexcept
 				: m_service{service}, m_context{service, cq, args...} {}
 
 			// This is here to trick the compiler into thinking the above signature exists
@@ -289,22 +309,40 @@ namespace asyncpp::grpc {
 
 			auto await_transform(send_initial_metadata_tag) noexcept { return m_context.send_initial_metadata(); }
 
-			auto await_transform(read_tag<typename traits::request_type> t) noexcept requires(traits::is_client_streaming) { return m_context.read(*t.m_msg); }
+			auto await_transform(read_tag<typename traits::request_type> t) noexcept
+				requires(traits::is_client_streaming)
+			{
+				return m_context.read(*t.m_msg);
+			}
 
-			auto await_transform(typename traits::request_type& msg) noexcept requires(traits::is_client_streaming) { return m_context.read(msg); }
+			auto await_transform(typename traits::request_type& msg) noexcept
+				requires(traits::is_client_streaming)
+			{
+				return m_context.read(msg);
+			}
 
-			auto await_transform(write_tag<typename traits::response_type> t) noexcept requires(traits::is_server_streaming) {
+			auto await_transform(write_tag<typename traits::response_type> t) noexcept
+				requires(traits::is_server_streaming)
+			{
 				return m_context.write(*t.m_msg);
 			}
 
-			auto await_transform(const typename traits::response_type& msg) noexcept requires(traits::is_server_streaming) { return m_context.write(msg); }
+			auto await_transform(const typename traits::response_type& msg) noexcept
+				requires(traits::is_server_streaming)
+			{
+				return m_context.write(msg);
+			}
 
 			template<typename U>
 			U&& await_transform(U&& awaitable) noexcept {
 				return static_cast<U&&>(awaitable);
 			}
 
-			auto yield_value(const typename traits::response_type& value) noexcept requires(traits::is_server_streaming) { return m_context.write(value); }
+			auto yield_value(const typename traits::response_type& value) noexcept
+				requires(traits::is_server_streaming)
+			{
+				return m_context.write(value);
+			}
 
 		private:
 			typename traits::service_type* m_service;
