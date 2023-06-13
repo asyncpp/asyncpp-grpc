@@ -102,7 +102,7 @@ function(GRPC_PB_GENERATE_CPP SRCS HDRS DEST)
   endif()
 
   if(DEFINED PROTOBUF_IMPORT_DIRS)
-    foreach(DIR ${Protobuf_IMPORT_DIRS})
+    foreach(DIR ${PROTOBUF_IMPORT_DIRS})
       get_filename_component(ABS_PATH ${DIR} ABSOLUTE)
       list(FIND _protobuf_include_path ${ABS_PATH} _contains_already)
       if(${_contains_already} EQUAL -1)
