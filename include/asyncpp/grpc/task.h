@@ -47,6 +47,11 @@ namespace asyncpp::grpc {
 
 		template<typename Context>
 		constexpr void on_write_done(const Context&, bool) const noexcept {}
+
+		template<typename Context>
+		::grpc::Status on_unhandled_exception(const Context&) const noexcept {
+			return util::exception_to_status(std::current_exception());
+		}
 	};
 
 	template<rpc_method_type Type, typename TRequest, typename TResponse, typename THooks>
@@ -208,7 +213,7 @@ namespace asyncpp::grpc {
 
 			void return_value(::grpc::Status s) noexcept { m_context.m_status = std::move(s); }
 
-			void unhandled_exception() { m_context.m_status = util::exception_to_status(std::current_exception()); }
+			void unhandled_exception() { m_context.m_status = m_context.m_hooks.on_unhandled_exception(m_context); }
 
 			auto initial_suspend() noexcept {
 				struct awaiter : calldata_interface {
