@@ -18,4 +18,3 @@ hunter_config(
 
 hunter_config(Protobuf VERSION 3.19.4-p0 CMAKE_ARGS
               CMAKE_POSITION_INDEPENDENT_CODE=ON)
-              

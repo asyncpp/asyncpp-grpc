@@ -1,13 +1,15 @@
-if(TARGET grpc++ AND TARGET grpc AND TARGET grpc_cpp_plugin)
+if(TARGET grpc++
+   AND TARGET grpc
+   AND TARGET grpc_cpp_plugin)
   message(STATUS "Using existing grpc target.")
   if(NOT TARGET gRPC::grpc++)
     add_library(gRPC::grpc++ ALIAS grpc++)
   endif()
   if(NOT TARGET gRPC::grpc)
-  add_library(gRPC::grpc ALIAS grpc)
+    add_library(gRPC::grpc ALIAS grpc)
   endif()
   if(NOT TARGET gRPC::grpc_cpp_plugin)
-  add_executable(gRPC::grpc_cpp_plugin ALIAS grpc_cpp_plugin)
+    add_executable(gRPC::grpc_cpp_plugin ALIAS grpc_cpp_plugin)
   endif()
 elseif(HUNTER_ENABLED)
   hunter_add_package(gRPC)
@@ -54,10 +56,11 @@ else()
                                    INTERFACE GRPC_ASAN_SUPPRESSED)
         if(NOT TARGET gRPC::grpc_cpp_plugin)
           add_executable(gRPC::grpc_cpp_plugin IMPORTED GLOBAL)
-          set_property(TARGET gRPC::grpc_cpp_plugin PROPERTY IMPORTED_LOCATION
-                                                            ${gRPCPP_PB_PLUGIN})
+          set_property(TARGET gRPC::grpc_cpp_plugin
+                       PROPERTY IMPORTED_LOCATION ${gRPCPP_PB_PLUGIN})
         endif()
-        set_target_properties(gRPC::grpc_cpp_plugin PROPERTIES IMPORTED_GLOBAL TRUE)
+        set_target_properties(gRPC::grpc_cpp_plugin PROPERTIES IMPORTED_GLOBAL
+                                                               TRUE)
         add_library(protobuf::libprotobuf ALIAS PkgConfig::Protobuf)
         if(NOT TARGET protobuf::protoc)
           add_executable(protobuf::protoc IMPORTED GLOBAL)
