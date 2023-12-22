@@ -96,7 +96,7 @@ namespace asyncpp::grpc {
 		using service_type = TService;
 		using request_type = TRequest;
 		using response_type = TResponse;
-		using stream_type = std::unique_ptr<::grpc::ClientAsyncResponseReader<response_type>>;
+		using stream_type = std::unique_ptr<::grpc::ClientAsyncResponseReaderInterface<response_type>>;
 		using call_ptr_type = stream_type (service_type::*)(::grpc::ClientContext*, const request_type&, ::grpc::CompletionQueue*);
 	};
 
