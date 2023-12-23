@@ -1,11 +1,12 @@
 #pragma once
-#include "asyncpp/ptr_tag.h"
 #include <asyncpp/detail/promise_allocator_base.h>
 #include <asyncpp/detail/std_import.h>
+#include <asyncpp/event.h>
 #include <asyncpp/grpc/calldata_interface.h>
 #include <asyncpp/grpc/rw_tag.h>
 #include <asyncpp/grpc/traits.h>
 #include <asyncpp/grpc/util.h>
+#include <asyncpp/ptr_tag.h>
 #include <grpcpp/impl/codegen/server_context.h>
 #include <grpcpp/impl/codegen/status.h>
 #include <type_traits>
@@ -85,6 +86,8 @@ namespace asyncpp::grpc {
 		}
 		THooks& hooks() noexcept { return m_hooks; }
 		const THooks& hooks() const noexcept { return m_hooks; }
+		asyncpp::multi_consumer_event& cancelled() noexcept { return m_is_cancelled; }
+		const asyncpp::multi_consumer_event& cancelled() const noexcept { return m_is_cancelled; }
 
 		auto send_initial_metadata() noexcept {
 			struct awaiter : calldata_interface {
@@ -162,6 +165,7 @@ namespace asyncpp::grpc {
 		template<typename TService, typename... Args>
 		task_rpc_context(TService* service, ::grpc::ServerCompletionQueue* cq, Args&... args) : m_cq{cq}, m_hooks{service, cq, args...} {}
 		::grpc::ServerCompletionQueue* m_cq;
+		asyncpp::multi_consumer_event m_is_cancelled{};
 		::grpc::ServerContext m_context{};
 		::grpc::Status m_status{};
 		typename traits::stream_type m_stream{&m_context};
@@ -185,7 +189,7 @@ namespace asyncpp::grpc {
 	struct task {
 		using traits = method_traits<decltype(FN)>;
 		// Promise type of this task
-		class promise_type : public detail::promise_allocator_base<Allocator> {
+		class promise_type : public detail::promise_allocator_base<Allocator>, calldata_interface {
 			using context_type = task_rpc_context<traits::type, typename traits::request_type, typename traits::response_type, Hooks>;
 
 		public:
@@ -245,26 +249,27 @@ namespace asyncpp::grpc {
 							ctx.m_context.~ServerContext();
 							new (&ctx.m_context)::grpc::ServerContext{};
 							ctx.m_stream = typename traits::stream_type{&ctx.m_context};
-							if constexpr (traits::is_client_streaming) {
-								(m_self->m_service->*(FN))(&ctx.m_context, &ctx.m_stream, ctx.m_cq, ctx.m_cq, ptr_tag<0, calldata_interface>(this));
-							} else {
-								ctx.m_request.Clear();
-								(m_self->m_service->*(FN))(&ctx.m_context, &ctx.m_request, &ctx.m_stream, ctx.m_cq, ctx.m_cq,
-														   ptr_tag<0, calldata_interface>(this));
-							}
+							this->start_grpc_call();
 						}
 					}
 					constexpr bool await_ready() const noexcept { return false; }
 					constexpr void await_suspend(coroutine_handle<> h) noexcept {
-						auto& ctx = m_self->m_context;
 						m_handle = h;
+						this->start_grpc_call();
+					}
+					void await_resume() const noexcept {}
+
+				private:
+					void start_grpc_call() noexcept {
+						auto& ctx = m_self->m_context;
+						ctx.context().AsyncNotifyWhenDone(ptr_tag<0, calldata_interface>(m_self));
 						if constexpr (traits::is_client_streaming) {
 							(m_self->m_service->*(FN))(&ctx.m_context, &ctx.m_stream, ctx.m_cq, ctx.m_cq, ptr_tag<0, calldata_interface>(this));
 						} else {
+							ctx.m_request.Clear();
 							(m_self->m_service->*(FN))(&ctx.m_context, &ctx.m_request, &ctx.m_stream, ctx.m_cq, ctx.m_cq, ptr_tag<0, calldata_interface>(this));
 						}
 					}
-					void await_resume() const noexcept {}
 				};
 				return awaiter{this};
 			}
@@ -357,6 +362,16 @@ namespace asyncpp::grpc {
 			promise_type& operator=(const promise_type&) = delete;
 			promise_type(promise_type&&) = delete;
 			promise_type& operator=(promise_type&&) = delete;
+
+			void handle_event(size_t idx, bool ok) noexcept override {
+				switch (idx) {
+				case 0:
+					// The request was cancelled, signal event
+					if (!ok) break;
+					if (m_context.context().IsCancelled()) m_context.m_is_cancelled.set();
+					break;
+				}
+			}
 		};
 
 		/// \brief Construct from a handle
