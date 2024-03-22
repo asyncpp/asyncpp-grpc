@@ -311,7 +311,7 @@ namespace asyncpp::grpc {
 				struct awaiter {
 					promise_type* m_self;
 					constexpr bool await_ready() const noexcept { return true; }
-					constexpr void await_suspend(asyncpp::coroutine_handle<> h) noexcept { assert(false); }
+					constexpr void await_suspend([[maybe_unused]] asyncpp::coroutine_handle<> h) noexcept { assert(false); }
 					constexpr context_type& await_resume() const noexcept { return m_self->m_context; }
 				};
 				return awaiter{this};
