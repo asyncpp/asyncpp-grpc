@@ -1,6 +1,7 @@
 #pragma once
 #include <asyncpp/detail/std_import.h>
 #include <asyncpp/grpc/calldata_interface.h>
+#include <asyncpp/grpc/client_cq.h>
 #include <asyncpp/grpc/traits.h>
 #include <asyncpp/ptr_tag.h>
 #include <grpcpp/impl/codegen/async_unary_call.h>
@@ -26,12 +27,13 @@ namespace asyncpp::grpc {
 		unary_call& operator=(const unary_call&) = delete;
 		unary_call& operator=(unary_call&&) = delete;
 
-		auto operator()(const typename traits::request_type& request, typename traits::response_type& response, ::grpc::CompletionQueue* cq) {
+		auto operator()(const typename traits::request_type& request, typename traits::response_type& response, ::grpc::CompletionQueue* cq = nullptr) {
 			struct awaiter : calldata_interface {
 				::grpc::ClientContext* m_context;
 				typename traits::service_type* m_stub;
 				const typename traits::request_type& m_request;
 				typename traits::response_type& m_response;
+				std::shared_ptr<client_cq> m_default_client_cq{};
 				::grpc::CompletionQueue* m_cq{};
 				typename traits::stream_type m_reader{};
 				::grpc::Status m_status{};
@@ -39,7 +41,12 @@ namespace asyncpp::grpc {
 
 				awaiter(::grpc::ClientContext* context, decltype(m_stub) s, const typename traits::request_type& request,
 						typename traits::response_type& response, ::grpc::CompletionQueue* cq)
-					: m_context{context}, m_stub{s}, m_request{request}, m_response{response}, m_cq{cq} {}
+					: m_context{context}, m_stub{s}, m_request{request}, m_response{response}, m_cq{cq} {
+					if (m_cq == nullptr) {
+						m_default_client_cq = client_cq::get_default();
+						m_cq = &m_default_client_cq->cq();
+					}
+				}
 
 				void handle_event([[maybe_unused]] size_t evt, bool ok) noexcept override {
 					assert(evt == 0);
@@ -53,7 +60,7 @@ namespace asyncpp::grpc {
 					m_handle = h;
 
 					m_reader = (m_stub->*FN)(m_context, m_request, m_cq);
-					m_reader->Finish(&m_response, &m_status, this);
+					m_reader->Finish(&m_response, &m_status, ptr_tag<0, calldata_interface>(this));
 				}
 				::grpc::Status await_resume() noexcept { return m_status; }
 			};
@@ -77,18 +84,20 @@ namespace asyncpp::grpc {
 			typename traits::service_type* stub;
 			typename traits::stream_type stream{};
 			bool m_need_writes_done{false};
+			std::shared_ptr<client_cq> default_client_cq{};
+			::grpc::CompletionQueue* cq{};
 
 			void destruct() {
 				if (stream) {
 					context->TryCancel();
 					if constexpr (traits::is_client_streaming) {
 						if (m_need_writes_done) {
-							stream->WritesDone(ptr_tag<0>(this));
+							stream->WritesDone(ptr_tag<0, calldata_interface>(this));
 						} else {
-							stream->Finish(&m_exit_status, ptr_tag<1>(this));
+							stream->Finish(&m_exit_status, ptr_tag<1, calldata_interface>(this));
 						}
 					} else
-						stream->Finish(&m_exit_status, ptr_tag<1>(this));
+						stream->Finish(&m_exit_status, ptr_tag<1, calldata_interface>(this));
 				} else {
 					delete this;
 				}
@@ -96,9 +105,9 @@ namespace asyncpp::grpc {
 
 		private:
 			::grpc::Status m_exit_status{};
-			void handle_event(size_t evt, bool ok) noexcept override {
+			void handle_event(size_t evt, [[maybe_unused]] bool ok) noexcept override {
 				if (evt == 0) {
-					return stream->Finish(&m_exit_status, ptr_tag<1>(this));
+					return stream->Finish(&m_exit_status, ptr_tag<1, calldata_interface>(this));
 				} else {
 					stream.reset();
 					context.reset();
@@ -131,17 +140,22 @@ namespace asyncpp::grpc {
 		::grpc::ClientContext& context() noexcept { return *m_state->context; }
 		const ::grpc::ClientContext& context() const noexcept { return *m_state->context; }
 
-		auto start(const typename traits::request_type& req, ::grpc::CompletionQueue* cq)
+		auto start(const typename traits::request_type& req, ::grpc::CompletionQueue* cq = nullptr)
 			requires(!traits::is_client_streaming && traits::is_server_streaming)
 		{
 			struct awaiter : calldata_interface {
 				state* m_state;
 				const typename traits::request_type& m_request{};
-				::grpc::CompletionQueue* m_cq{};
 				coroutine_handle<> m_handle{};
 				bool m_was_ok = false;
 
-				awaiter(state* state, const typename traits::request_type& req, ::grpc::CompletionQueue* cq) : m_state{state}, m_request{req}, m_cq{cq} {}
+				awaiter(state* state, const typename traits::request_type& req, ::grpc::CompletionQueue* cq) : m_state{state}, m_request{req} {
+					if (cq == nullptr) {
+						m_state->default_client_cq = client_cq::get_default();
+						cq = &m_state->default_client_cq->cq();
+					}
+					m_state->cq = cq;
+				}
 
 				void handle_event([[maybe_unused]] size_t evt, bool ok) noexcept override {
 					assert(evt == 0);
@@ -154,24 +168,29 @@ namespace asyncpp::grpc {
 				void await_suspend(coroutine_handle<> h) noexcept {
 					assert(m_state);
 					m_handle = h;
-					m_state->stream = (m_state->stub->*FN)(m_state->context.get(), m_request, m_cq, this);
+					m_state->stream = (m_state->stub->*FN)(m_state->context.get(), m_request, m_state->cq, ptr_tag<0, calldata_interface>(this));
 				}
 				bool await_resume() const noexcept { return m_was_ok; }
 			};
 			return awaiter{m_state.get(), req, cq};
 		}
 
-		auto start(typename traits::response_type& resp, ::grpc::CompletionQueue* cq)
+		auto start(typename traits::response_type& resp, ::grpc::CompletionQueue* cq = nullptr)
 			requires(traits::is_client_streaming && !traits::is_server_streaming)
 		{
 			struct awaiter : calldata_interface {
 				state* m_state;
 				typename traits::response_type& m_response;
-				::grpc::CompletionQueue* m_cq{};
 				coroutine_handle<> m_handle{};
 				bool m_was_ok = false;
 
-				awaiter(state* state, typename traits::response_type& resp, ::grpc::CompletionQueue* cq) : m_state{state}, m_response{resp}, m_cq{cq} {}
+				awaiter(state* state, typename traits::response_type& resp, ::grpc::CompletionQueue* cq) : m_state{state}, m_response{resp} {
+					if (cq == nullptr) {
+						m_state->default_client_cq = client_cq::get_default();
+						cq = &m_state->default_client_cq->cq();
+					}
+					m_state->cq = cq;
+				}
 
 				void handle_event([[maybe_unused]] size_t evt, bool ok) noexcept override {
 					assert(evt == 0);
@@ -185,23 +204,28 @@ namespace asyncpp::grpc {
 				void await_suspend(coroutine_handle<> h) noexcept {
 					assert(m_state);
 					m_handle = h;
-					m_state->stream = (m_state->stub->*FN)(m_state->context.get(), &m_response, m_cq, this);
+					m_state->stream = (m_state->stub->*FN)(m_state->context.get(), &m_response, m_state->cq, ptr_tag<0, calldata_interface>(this));
 				}
 				bool await_resume() noexcept { return m_was_ok; }
 			};
 			return awaiter{m_state.get(), resp, cq};
 		}
 
-		auto start(::grpc::CompletionQueue* cq)
+		auto start(::grpc::CompletionQueue* cq = nullptr)
 			requires(traits::is_client_streaming && traits::is_server_streaming)
 		{
 			struct awaiter : calldata_interface {
 				state* m_state;
-				::grpc::CompletionQueue* m_cq{};
 				coroutine_handle<> m_handle{};
 				bool m_was_ok = false;
 
-				awaiter(state* state, ::grpc::CompletionQueue* cq) : m_state{state}, m_cq{cq} {}
+				awaiter(state* state, ::grpc::CompletionQueue* cq) : m_state{state} {
+					if (cq == nullptr) {
+						m_state->default_client_cq = client_cq::get_default();
+						cq = &m_state->default_client_cq->cq();
+					}
+					m_state->cq = cq;
+				}
 
 				void handle_event([[maybe_unused]] size_t evt, bool ok) noexcept override {
 					assert(evt == 0);
@@ -215,7 +239,7 @@ namespace asyncpp::grpc {
 				void await_suspend(coroutine_handle<> h) noexcept {
 					assert(m_state);
 					m_handle = h;
-					m_state->stream = (m_state->stub->*FN)(m_state->context.get(), m_cq, this);
+					m_state->stream = (m_state->stub->*FN)(m_state->context.get(), m_state->cq, ptr_tag<0, calldata_interface>(this));
 				}
 				bool await_resume() noexcept { return m_was_ok; }
 			};
@@ -243,7 +267,7 @@ namespace asyncpp::grpc {
 				void await_suspend(coroutine_handle<> h) noexcept {
 					assert(m_state);
 					m_handle = h;
-					m_state->stream->Read(m_resp, this);
+					m_state->stream->Read(m_resp, ptr_tag<0, calldata_interface>(this));
 				}
 				bool await_resume() noexcept { return m_was_ok; }
 			};
@@ -272,7 +296,7 @@ namespace asyncpp::grpc {
 				void await_suspend(coroutine_handle<> h) noexcept {
 					assert(m_state);
 					m_handle = h;
-					m_state->stream->Write(m_msg, this);
+					m_state->stream->Write(m_msg, ptr_tag<0, calldata_interface>(this));
 				}
 				bool await_resume() noexcept { return m_was_ok; }
 			};
@@ -302,7 +326,7 @@ namespace asyncpp::grpc {
 				void await_suspend(coroutine_handle<> h) noexcept {
 					assert(m_state);
 					m_handle = h;
-					m_state->stream->WriteLast(m_msg, ::grpc::WriteOptions{}, this);
+					m_state->stream->WriteLast(m_msg, ::grpc::WriteOptions{}, ptr_tag<0, calldata_interface>(this));
 				}
 				bool await_resume() noexcept { return m_was_ok; }
 			};
@@ -331,7 +355,7 @@ namespace asyncpp::grpc {
 				void await_suspend(coroutine_handle<> h) noexcept {
 					assert(m_state);
 					m_handle = h;
-					m_state->stream->WritesDone(this);
+					m_state->stream->WritesDone(ptr_tag<0, calldata_interface>(this));
 				}
 				bool await_resume() noexcept { return m_was_ok; }
 			};
@@ -350,7 +374,7 @@ namespace asyncpp::grpc {
 					assert(m_handle);
 					if (!ok) m_status = ::grpc::Status(::grpc::StatusCode::UNKNOWN, "Event returned ok=false");
 					switch (evt) {
-					case 0: return m_state->stream->Finish(&m_status, asyncpp::ptr_tag<1>(this)); break;
+					case 0: return m_state->stream->Finish(&m_status, asyncpp::ptr_tag<1, calldata_interface>(this)); break;
 					case 1: m_state->stream.reset(); break;
 					default: assert(false); break;
 					}
@@ -362,12 +386,12 @@ namespace asyncpp::grpc {
 					m_handle = h;
 					if constexpr (traits::is_client_streaming) {
 						if (m_state->m_need_writes_done) {
-							m_state->stream->WritesDone(ptr_tag<0>(this));
+							m_state->stream->WritesDone(ptr_tag<0, calldata_interface>(this));
 						} else {
-							m_state->stream->Finish(&m_status, ptr_tag<1>(this));
+							m_state->stream->Finish(&m_status, ptr_tag<1, calldata_interface>(this));
 						}
 					} else {
-						m_state->stream->Finish(&m_status, ptr_tag<1>(this));
+						m_state->stream->Finish(&m_status, ptr_tag<1, calldata_interface>(this));
 					}
 				}
 				::grpc::Status await_resume() noexcept { return m_status; }
