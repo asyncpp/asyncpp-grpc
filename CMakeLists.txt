@@ -24,9 +24,11 @@ else()
   include(cmake/Fetch_asyncpp.cmake)
 endif()
 
-add_library(asyncpp_grpc ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/client_cq.cpp
-                         ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/server.cpp
-                         ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/util.cpp)
+add_library(
+  asyncpp_grpc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/client_cq.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/server.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/grpc/util.cpp)
 target_link_libraries(
   asyncpp_grpc PUBLIC asyncpp gRPC::grpc++ protobuf::libprotobuf
                       Threads::Threads)
@@ -48,7 +50,8 @@ if(ASYNCPP_BUILD_TEST)
 
   add_executable(
     asyncpp_grpc-test
-    ${PROTO_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/test/traits.cpp
+    ${PROTO_SRCS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/traits.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/call.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/client_cq.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/task.cpp)
