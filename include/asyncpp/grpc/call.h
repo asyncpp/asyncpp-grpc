@@ -257,7 +257,7 @@ namespace asyncpp::grpc {
 
 				awaiter(state* state, typename traits::response_type* resp) : m_state{state}, m_resp{resp} {}
 
-				void handle_event(size_t evt, bool ok) noexcept override {
+				void handle_event([[maybe_unused]] size_t evt, bool ok) noexcept override {
 					assert(m_handle);
 					assert(evt == 0);
 					m_was_ok = ok;
