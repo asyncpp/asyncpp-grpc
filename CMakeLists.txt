@@ -36,6 +36,12 @@ target_include_directories(asyncpp_grpc
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(asyncpp_grpc PUBLIC cxx_std_20)
 
+if(ASYNCPP_WITH_ASAN)
+  message(STATUS "Building with asan enabled")
+  target_compile_options(asyncpp_grpc PRIVATE -fsanitize=address)
+  target_link_libraries(asyncpp_grpc PRIVATE -fsanitize=address)
+endif()
+
 if(ASYNCPP_BUILD_TEST)
   enable_testing()
   include(GoogleTest)
@@ -61,9 +67,8 @@ if(ASYNCPP_BUILD_TEST)
                              PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/protos/)
 
   if(ASYNCPP_WITH_ASAN)
-    message(STATUS "Building with asan enabled")
     target_compile_options(asyncpp_grpc-test PRIVATE -fsanitize=address)
-    target_link_libraries(asyncpp_grpc-test PRIVATE asan)
+    target_link_libraries(asyncpp_grpc-test PRIVATE -fsanitize=address)
   endif()
 
   gtest_discover_tests(asyncpp_grpc-test)
